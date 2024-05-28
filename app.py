@@ -14,6 +14,12 @@ class DniScraper(Resource):
         result = scrape_dni_info(dni)
         return jsonify(result)
 
+@app.route('/')
+def index():
+    return jsonify({
+        'message': 'Bienvenido a la API de Scrapeo de DNI. Utiliza /scrape?dni=NUMERO_DNI para obtener información.'
+    })
+
 api.add_resource(DniScraper, '/scrape')
 
 if __name__ == '__main__':
