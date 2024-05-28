@@ -3,8 +3,6 @@ anyio==4.2.0
 asgiref==3.7.2
 certifi==2023.11.17
 distlib==0.3.8
-# Editable install with no version control (Django==5.1.dev20240115124202)
--e /home/jhonbaudin/Projects/django
 fastapi==0.108.0
 filelock==3.13.1
 h11==0.14.0
