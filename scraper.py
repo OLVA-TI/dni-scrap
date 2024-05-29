@@ -128,7 +128,7 @@ def scrape_dni_info(dni):
 
             except Exception as e:
 
-                result['message'] = f"No se ha encontrado el DNI: {e}"
+                result['message'] = "No se ha encontrado el DNI"
                 result['success'] = False
 
             browser_instance.close()
