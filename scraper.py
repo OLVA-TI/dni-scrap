@@ -127,7 +127,19 @@ def scrape_dni_info(dni):
                     result['success'] = False
 
             except Exception as e:
-
+                data = {
+                    'dni': dni,
+                    'apellido_paterno': None,
+                    'apellido_materno': None,
+                    'nombres': None,
+                    'digito_verificador': None,
+                    'status': 0,
+                    'error': str(e)
+                }
+                connection = connect_to_oracle()
+                if connection:
+                    insert_into_table(connection, data)
+                    connection.close()
                 result['message'] = "No se ha encontrado el DNI"
                 result['success'] = False
 

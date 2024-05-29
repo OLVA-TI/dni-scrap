@@ -29,7 +29,7 @@ def get_dni_info(dni):
             return {'message': 'No se pudo conectar a la base de datos.', 'success': False}
         
         cursor = connection.cursor()
-        query = "SELECT apellidoMaterno, apellidoPaterno, digitoVerificador, dni, nombres FROM DATOS_DNI WHERE dni = :dni"
+        query = "SELECT apellidoMaterno, apellidoPaterno, digitoVerificador, dni, nombres FROM DATOS_DNI WHERE dni = :dni AND status = 1"
         cursor.execute(query, {'dni': dni})
         result = cursor.fetchone()
         cursor.close()
