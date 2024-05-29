@@ -39,3 +39,4 @@ instance/
 
 # Installer logs
 pip-log.txt
+.env
