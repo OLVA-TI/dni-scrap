@@ -61,9 +61,9 @@ def get_dni_info(dni):
                     }
                     response = {'data': data, 'message': 'Información de DNI obtenida después del scraping.', 'success': True}
                 else:
-                    response = {'message': 'No se encontraron datos para el DNI especificado después del scraping.', 'success': False}
+                    response = {'message': f'No se encontraron datos para el DNI especificado después del scraping {dni}.', 'success': False}
             else:
-                response = {'message': 'No se encontraron datos para el DNI especificado.', 'success': False}
+                response = {'message': f'No se encontraron datos para el DNI especificado {dni}.', 'success': False}
         
         connection.close()
     except cx_Oracle.Error as error:

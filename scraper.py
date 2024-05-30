@@ -68,9 +68,33 @@ def insert_into_table(connection, data):
     try:
         cursor = connection.cursor()
 
-        cursor.execute("INSERT INTO datos_dni (dni, apellidopaterno, apellidomaterno, nombres, digitoverificador, status, error) "
-                       "VALUES (:dni, :apellido_paterno, :apellido_materno, :nombres, :digito_verificador, :status, :error)",
-                       data)
+        merge_sql = """
+        MERGE INTO datos_dni dd
+        USING (
+            SELECT :dni AS dni, 
+                :apellido_paterno AS apellidopaterno, 
+                :apellido_materno AS apellidomaterno, 
+                :nombres AS nombres, 
+                :digito_verificador AS digitoverificador, 
+                :status AS status, 
+                :error AS error
+            FROM dual
+        ) src
+        ON (dd.dni = src.dni)
+        WHEN MATCHED THEN
+            UPDATE SET 
+                dd.apellidopaterno = src.apellidopaterno,
+                dd.apellidomaterno = src.apellidomaterno,
+                dd.nombres = src.nombres,
+                dd.digitoverificador = src.digitoverificador,
+                dd.status = src.status,
+                dd.error = src.error
+        WHEN NOT MATCHED THEN
+            INSERT (dni, apellidopaterno, apellidomaterno, nombres, digitoverificador, status, error)
+            VALUES (src.dni, src.apellidopaterno, src.apellidomaterno, src.nombres, src.digitoverificador, src.status, src.error)
+        """
+
+        cursor.execute(merge_sql, data)
 
         connection.commit()
         cursor.close()
