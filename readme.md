@@ -50,24 +50,31 @@ Este proyecto proporciona instrucciones para instalar y ejecutar [breve descripc
    ```
    pip install -r requirements.txt
    ```
+6. Instalar Google Chrome:
 
-6. Ejecuta el proyecto en desarrollo:
+   ```
+   wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+   sudo dnf install ./google-chrome-stable_current_x86_64.rpm
+
+   ```
+
+7. Ejecuta el proyecto en desarrollo:
 
    ```
    python app.py
 
    ```
-7. Ejecuta el proyecto en produccion:
+8. Ejecuta el proyecto en produccion:
 
    ```
-   gunicorn --bind 0.0.0.0:5000 wsgi:app
+   screen gunicorn --bind 0.0.0.0:8089 --workers 5 --timeout 30 app:app
    ```
 
-8. El proyecto estará disponible en http://localhost:5000.
+9. El proyecto estará disponible en http://0.0.0.0:8089.
 
 ## Uso
 
-Una vez que el proyecto esté instalado y en ejecución, puedes acceder a él desde tu navegador web visitando la dirección http://localhost:5000. Desde allí, sigue las instrucciones de la interfaz de usuario para utilizar las funciones proporcionadas por el proyecto.
+Una vez que el proyecto esté instalado y en ejecución, puedes acceder a él desde tu navegador web visitando la dirección http://localhost:8089. Desde allí, sigue las instrucciones de la interfaz de usuario para utilizar las funciones proporcionadas por el proyecto.
 
 ## Contribución
 
