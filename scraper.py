@@ -2,6 +2,7 @@ import os
 import cx_Oracle
 from dotenv import load_dotenv
 from selenium import webdriver
+import selenium
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
@@ -186,14 +187,24 @@ def scrape_dni_info(dni):
                     else:
                         time.sleep(3)  # Esperar antes de reintentar
 
-            browser_instance.close()
-            browser_instance.switch_to.window(browser_instance.window_handles[0])
+            try:
+                if browser_instance.window_handles:
+                    browser_instance.close()
+                    if len(browser_instance.window_handles) > 0:
+                        browser_instance.switch_to.window(browser_instance.window_handles[0])
+            except selenium.common.exceptions.NoSuchWindowException:
+                pass  # No hacer nada si la ventana ya está cerrada o no existe
 
         except Exception as e:
             result['message'] = str(e)
             result['success'] = False
-            browser_instance.close()
-            browser_instance.switch_to.window(browser_instance.window_handles[0])
+            try:
+                if browser_instance.window_handles:
+                    browser_instance.close()
+                    if len(browser_instance.window_handles) > 0:
+                        browser_instance.switch_to.window(browser_instance.window_handles[0])
+            except selenium.common.exceptions.NoSuchWindowException:
+                pass  # No hacer nada si la ventana ya está cerrada o no existe
 
     return result
 
