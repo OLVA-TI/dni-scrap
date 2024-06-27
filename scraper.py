@@ -158,6 +158,7 @@ def scrape_dni_info(dni):
                     result['success'] = False
 
             except NoSuchElementException:
+                # Retry the scraping if Cloudflare blocks the first attempt
                 try:
                     browser_instance.close()
                     browser_instance.switch_to.window(browser_instance.window_handles[0])
