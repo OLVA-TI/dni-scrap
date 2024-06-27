@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_restful import Api, Resource
 from flask_cors import CORS  # Importar flask_cors
 from scraper import scrape_dni_info, init_browser, close_browser
@@ -18,7 +18,7 @@ class DniScraper(Resource):
     def get(self):
         dni = request.args.get('dni')
         if not dni:
-            return {'error': 'DNI parameter is required'}, 400
+            return error_response('DNI parameter is required', 400)
         
         result = scrape_dni_info(dni)
         return jsonify(result)
@@ -26,9 +26,15 @@ class DniScraper(Resource):
 class Dni(Resource):
     def get(self, dni):
         if not dni:
-            return {'error': 'DNI parameter is required'}, 400
-        return jsonify(get_dni_info(dni))
+            return error_response('DNI parameter is required', 400)
+        response = get_dni_info(dni)
+        if not response['success']:
+            return make_response(jsonify(response), 204)
+        return make_response(jsonify(response), 200)
     
+def error_response(message, status_code):
+    return make_response(jsonify({'error': message}), status_code)
+
 api.add_resource(DniScraper, '/scrape')
 api.add_resource(Dni, '/dni/<dni>')
 
