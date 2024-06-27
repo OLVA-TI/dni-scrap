@@ -135,6 +135,13 @@ def scrape_dni_info(dni):
                 apellidom = browser_instance.find_element(By.ID, 'apellidom').get_attribute('value')
                 digito_verificador = get_verify_code(dni)
 
+                try:
+                    if browser_instance:
+                        browser_instance.close()
+                        browser_instance.switch_to.window(browser_instance.window_handles[0])
+                except Exception as close_error:
+                    print(f"Error al cerrar el navegador: {close_error}")
+
                 return {
                     'dni': dni,
                     'apellido_paterno': apellidop,
@@ -189,13 +196,13 @@ def scrape_dni_info(dni):
         except Exception as e:
             result['message'] = str(e)
             result['success'] = False
-        finally:
-            try:
-                if browser_instance:
-                    browser_instance.close()
-                    browser_instance.switch_to.window(browser_instance.window_handles[0])
-            except Exception as close_error:
-                print(f"Error al cerrar el navegador: {close_error}")
+        # finally:
+        #     try:
+        #         if browser_instance:
+        #             browser_instance.close()
+        #             browser_instance.switch_to.window(browser_instance.window_handles[0])
+        #     except Exception as close_error:
+        #         print(f"Error al cerrar el navegador: {close_error}")
 
     return result
 
