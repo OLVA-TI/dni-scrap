@@ -42,7 +42,6 @@ def init_browser():
         # options.add_argument('--start-maximized')  # Iniciar Chrome maximizado
         options.add_argument('--page-load-strategy=eager')
         options.add_argument('--remote-debugging-port=9222')
-
         prefs = {
             "profile.managed_default_content_settings.images": 2,
             "profile.managed_default_content_settings.stylesheets": 2,
@@ -116,10 +115,10 @@ def scrape_dni_info(dni):
         if browser_instance is None:
             init_browser()
         
-        if browser_instance is None:
-            result['message'] = 'Browser initialization failed.'
-            result['success'] = False
-            return result
+        # if browser_instance is None:
+        #     result['message'] = 'Browser initialization failed.'
+        #     result['success'] = False
+        #     return result
 
         def attempt_scrape():
             try:
