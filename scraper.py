@@ -42,6 +42,7 @@ def init_browser():
         # options.add_argument('--start-maximized')  # Iniciar Chrome maximizado
         options.add_argument('--page-load-strategy=eager')
         options.add_argument('--remote-debugging-port=9222')
+        options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
         prefs = {
             "profile.managed_default_content_settings.images": 2,
             "profile.managed_default_content_settings.stylesheets": 2,
@@ -184,7 +185,7 @@ def scrape_dni_info(dni):
                         result['message'] = "No se ha encontrado el DNI o Cloudflare bloqueó el acceso después de varios intentos."
                         result['success'] = False
                     else:
-                        time.sleep(3)  # Esperar antes de reintentar
+                        time.sleep(2)  # Esperar antes de reintentar
 
         except Exception as e:
             result['message'] = str(e)
