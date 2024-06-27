@@ -191,9 +191,11 @@ def scrape_dni_info(dni):
             result['success'] = False
         finally:
             try:
-                if browser_instance:
+                if browser_instance and len(browser_instance.window_handles) > 1:
+                    current_window_handle = browser_instance.current_window_handle
                     browser_instance.close()
                     browser_instance.switch_to.window(browser_instance.window_handles[0])
+                    browser_instance.switch_to.window(current_window_handle)
             except Exception as close_error:
                 print(f"Error al cerrar el navegador: {close_error}")
 
