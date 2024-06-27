@@ -121,49 +121,37 @@ def scrape_dni_info(dni):
             return result
 
         def attempt_scrape():
-            browser_instance.execute_script("window.open('');")
-            browser_instance.switch_to.window(browser_instance.window_handles[-1])
-            browser_instance.get('https://eldni.com/pe/buscar-datos-por-dni')
+            try:
+                browser_instance.execute_script("window.open('');")
+                browser_instance.switch_to.window(browser_instance.window_handles[-1])
+                browser_instance.get('https://eldni.com/pe/buscar-datos-por-dni')
 
-            dni_input = browser_instance.find_element(By.ID, 'dni')
-            dni_input.send_keys(dni)
-            dni_input.submit()
+                dni_input = browser_instance.find_element(By.ID, 'dni')
+                dni_input.send_keys(dni)
+                dni_input.submit()
 
-            nombres = browser_instance.find_element(By.ID, 'nombres').get_attribute('value')
-            apellidop = browser_instance.find_element(By.ID, 'apellidop').get_attribute('value')
-            apellidom = browser_instance.find_element(By.ID, 'apellidom').get_attribute('value')
-            digito_verificador = get_verify_code(dni)
+                nombres = browser_instance.find_element(By.ID, 'nombres').get_attribute('value')
+                apellidop = browser_instance.find_element(By.ID, 'apellidop').get_attribute('value')
+                apellidom = browser_instance.find_element(By.ID, 'apellidom').get_attribute('value')
+                digito_verificador = get_verify_code(dni)
 
-            return {
-                'dni': dni,
-                'apellido_paterno': apellidop,
-                'apellido_materno': apellidom,
-                'nombres': nombres,
-                'digito_verificador': digito_verificador,
-                'status': 1,
-                'error': None
-            }
+                return {
+                    'dni': dni,
+                    'apellido_paterno': apellidop,
+                    'apellido_materno': apellidom,
+                    'nombres': nombres,
+                    'digito_verificador': digito_verificador,
+                    'status': 1,
+                    'error': None
+                }
+
+            except NoSuchElementException as e:
+                raise e  # Propagar la excepción para manejarla fuera
 
         try:
-            try:
-                data = attempt_scrape()
-
-                connection = connect_to_oracle()
-                if connection:
-                    insert_into_table(connection, data)
-                    connection.close()
-                    result['message'] = "Información de DNI obtenida y guardada en la base de datos."
-                    result['success'] = True
-                else:
-                    result['message'] = "No se pudo conectar a la base de datos."
-                    result['success'] = False
-
-            except NoSuchElementException:
-                # Retry the scraping if Cloudflare blocks the first attempt
+            attempt_count = 0
+            while attempt_count < 3:
                 try:
-                    browser_instance.close()
-                    browser_instance.switch_to.window(browser_instance.window_handles[0])
-                    time.sleep(3) # Esperar un poco antes de reintentar
                     data = attempt_scrape()
 
                     connection = connect_to_oracle()
@@ -175,28 +163,32 @@ def scrape_dni_info(dni):
                     else:
                         result['message'] = "No se pudo conectar a la base de datos."
                         result['success'] = False
+                    break  # Salir del bucle si tiene éxito
 
                 except NoSuchElementException as e:
-                    data = {
-                        'dni': dni,
-                        'apellido_paterno': None,
-                        'apellido_materno': None,
-                        'nombres': None,
-                        'digito_verificador': None,
-                        'status': 0,
-                        'error': str(e)
-                    }
-                    connection = connect_to_oracle()
-                    if connection:
-                        insert_into_table(connection, data)
-                        connection.close()
-                    result['message'] = "No se ha encontrado el DNI o Cloudflare bloqueó el acceso."
-                    result['success'] = False
-                    browser_instance.close()
-                    browser_instance.switch_to.window(browser_instance.window_handles[0])
+                    attempt_count += 1
+                    if attempt_count == 3:
+                        data = {
+                            'dni': dni,
+                            'apellido_paterno': None,
+                            'apellido_materno': None,
+                            'nombres': None,
+                            'digito_verificador': None,
+                            'status': 0,
+                            'error': str(e)
+                        }
+                        connection = connect_to_oracle()
+                        if connection:
+                            insert_into_table(connection, data)
+                            connection.close()
+                        result['message'] = "No se ha encontrado el DNI o Cloudflare bloqueó el acceso después de varios intentos."
+                        result['success'] = False
+                    else:
+                        time.sleep(3)  # Esperar antes de reintentar
 
             browser_instance.close()
             browser_instance.switch_to.window(browser_instance.window_handles[0])
+
         except Exception as e:
             result['message'] = str(e)
             result['success'] = False

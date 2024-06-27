@@ -39,7 +39,6 @@ api.add_resource(DniScraper, '/scrape')
 api.add_resource(Dni, '/dni/<dni>')
 
 if __name__ == '__main__':
-    init_browser()
     try:
         app.run(debug=True)
     finally:
