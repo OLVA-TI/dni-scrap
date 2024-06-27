@@ -30,7 +30,7 @@ def init_browser():
     global browser_instance
     if browser_instance is None:
         options = webdriver.ChromeOptions()
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--disable-gpu')
@@ -135,13 +135,6 @@ def scrape_dni_info(dni):
                 apellidom = browser_instance.find_element(By.ID, 'apellidom').get_attribute('value')
                 digito_verificador = get_verify_code(dni)
 
-                try:
-                    if browser_instance:
-                        browser_instance.close()
-                        browser_instance.switch_to.window(browser_instance.window_handles[0])
-                except Exception as close_error:
-                    print(f"Error al cerrar el navegador: {close_error}")
-
                 return {
                     'dni': dni,
                     'apellido_paterno': apellidop,
@@ -175,6 +168,12 @@ def scrape_dni_info(dni):
                 except NoSuchElementException as e:
                     attempt_count += 1
                     if attempt_count == 3:
+                        try:
+                            if browser_instance:
+                                browser_instance.close()
+                                browser_instance.switch_to.window(browser_instance.window_handles[0])
+                        except Exception as close_error:
+                            print(f"Error al cerrar el navegador: {close_error}")
                         data = {
                             'dni': dni,
                             'apellido_paterno': None,
@@ -191,18 +190,18 @@ def scrape_dni_info(dni):
                         result['message'] = "No se ha encontrado el DNI o Cloudflare bloqueó el acceso después de varios intentos."
                         result['success'] = False
                     else:
-                        time.sleep(3)  # Esperar antes de reintentar
+                        time.sleep(3)
 
         except Exception as e:
             result['message'] = str(e)
             result['success'] = False
-        # finally:
-        #     try:
-        #         if browser_instance:
-        #             browser_instance.close()
-        #             browser_instance.switch_to.window(browser_instance.window_handles[0])
-        #     except Exception as close_error:
-        #         print(f"Error al cerrar el navegador: {close_error}")
+        finally:
+            try:
+                if browser_instance:
+                    browser_instance.close()
+                    browser_instance.switch_to.window(browser_instance.window_handles[0])
+            except Exception as close_error:
+                print(f"Error al cerrar el navegador: {close_error}")
 
     return result
 
