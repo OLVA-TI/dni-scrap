@@ -114,7 +114,7 @@ def scrape_dni_info(dni):
     with browser_lock:
         if browser_instance is None:
             init_browser()
-
+        
         if browser_instance is None:
             result['message'] = 'Browser initialization failed.'
             result['success'] = False
@@ -144,26 +144,51 @@ def scrape_dni_info(dni):
                     'status': 1,
                     'error': None
                 }
+
             except NoSuchElementException as e:
-                raise Exception(f"No se encontraron elementos esperados en la página: {str(e)}")
+                raise e  # Propagar la excepción para manejarla fuera
 
         try:
-            data = attempt_scrape()
+            attempt_count = 0
+            while attempt_count < 2:
+                try:
+                    data = attempt_scrape()
 
-            connection = connect_to_oracle()
-            if connection:
-                insert_into_table(connection, data)
-                connection.close()
-                result['message'] = "Información de DNI obtenida y guardada en la base de datos."
-                result['success'] = True
-            else:
-                result['message'] = "No se pudo conectar a la base de datos."
-                result['success'] = False
+                    connection = connect_to_oracle()
+                    if connection:
+                        insert_into_table(connection, data)
+                        connection.close()
+                        result['message'] = "Información de DNI obtenida y guardada en la base de datos."
+                        result['success'] = True
+                    else:
+                        result['message'] = "No se pudo conectar a la base de datos."
+                        result['success'] = False
+                    break  # Salir del bucle si tiene éxito
+
+                except NoSuchElementException as e:
+                    attempt_count += 1
+                    if attempt_count == 3:
+                        data = {
+                            'dni': dni,
+                            'apellido_paterno': None,
+                            'apellido_materno': None,
+                            'nombres': None,
+                            'digito_verificador': None,
+                            'status': 0,
+                            'error': str(e)
+                        }
+                        connection = connect_to_oracle()
+                        if connection:
+                            insert_into_table(connection, data)
+                            connection.close()
+                        result['message'] = "No se ha encontrado el DNI o Cloudflare bloqueó el acceso después de varios intentos."
+                        result['success'] = False
+                    else:
+                        time.sleep(3)  # Esperar antes de reintentar
 
         except Exception as e:
             result['message'] = str(e)
             result['success'] = False
-
         finally:
             try:
                 if browser_instance:
@@ -173,7 +198,6 @@ def scrape_dni_info(dni):
                 print(f"Error al cerrar el navegador: {close_error}")
 
     return result
-
 
 def get_verify_code(dni):
     sum = 5
