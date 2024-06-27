@@ -7,6 +7,8 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import threading
+import time
+from selenium.common.exceptions import NoSuchElementException
 
 # Cargar las variables de entorno desde el archivo .env
 load_dotenv()
@@ -25,35 +27,37 @@ browser_lock = threading.Lock()
 
 def init_browser():
     global browser_instance
-    options = webdriver.ChromeOptions()
-    options.add_argument('--headless')
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--disable-extensions')
-    options.add_argument('--disable-popup-blocking')
-    options.add_argument('--disable-notifications')
-    options.add_argument('--disable-background-timer-throttling')
-    options.add_argument('--disable-backgrounding-occluded-windows')
-    # options.add_argument('--start-maximized')  # Iniciar Chrome maximizado
-    options.add_argument('--page-load-strategy=eager')
+    if browser_instance is None:
+        options = webdriver.ChromeOptions()
+        # options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-popup-blocking')
+        options.add_argument('--disable-notifications')
+        options.add_argument('--disable-background-timer-throttling')
+        options.add_argument('--disable-backgrounding-occluded-windows')
+        # options.add_argument('--start-maximized')  # Iniciar Chrome maximizado
+        options.add_argument('--page-load-strategy=eager')
 
-    prefs = {
-        "profile.managed_default_content_settings.images": 2,
-        "profile.managed_default_content_settings.stylesheets": 2,
-    }
-    options.add_experimental_option("prefs", prefs)
+        prefs = {
+            "profile.managed_default_content_settings.images": 2,
+            "profile.managed_default_content_settings.stylesheets": 2,
+        }
+        options.add_experimental_option("prefs", prefs)
 
-    try:
-        browser_instance = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-    except Exception as e:
-        print(f"Error initializing browser: {e}")
-        browser_instance = None
+        try:
+            browser_instance = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
+        except Exception as e:
+            print(f"Error initializing browser: {e}")
+            browser_instance = None
 
 def close_browser():
     global browser_instance
     if browser_instance:
         browser_instance.quit()
+        browser_instance = None
 
 def connect_to_oracle():
     try:
@@ -115,7 +119,7 @@ def scrape_dni_info(dni):
             result['success'] = False
             return result
 
-        try:
+        def attempt_scrape():
             browser_instance.execute_script("window.open('');")
             browser_instance.switch_to.window(browser_instance.window_handles[-1])
             browser_instance.get('https://eldni.com/pe/buscar-datos-por-dni')
@@ -124,21 +128,24 @@ def scrape_dni_info(dni):
             dni_input.send_keys(dni)
             dni_input.submit()
 
-            try:
-                nombres = browser_instance.find_element(By.ID, 'nombres').get_attribute('value')
-                apellidop = browser_instance.find_element(By.ID, 'apellidop').get_attribute('value')
-                apellidom = browser_instance.find_element(By.ID, 'apellidom').get_attribute('value')
-                digito_verificador = get_verify_code(dni)
+            nombres = browser_instance.find_element(By.ID, 'nombres').get_attribute('value')
+            apellidop = browser_instance.find_element(By.ID, 'apellidop').get_attribute('value')
+            apellidom = browser_instance.find_element(By.ID, 'apellidom').get_attribute('value')
+            digito_verificador = get_verify_code(dni)
 
-                data = {
-                    'dni': dni,
-                    'apellido_paterno': apellidop,
-                    'apellido_materno': apellidom,
-                    'nombres': nombres,
-                    'digito_verificador': digito_verificador,
-                    'status': 1,
-                    'error': None
-                }
+            return {
+                'dni': dni,
+                'apellido_paterno': apellidop,
+                'apellido_materno': apellidom,
+                'nombres': nombres,
+                'digito_verificador': digito_verificador,
+                'status': 1,
+                'error': None
+            }
+
+        try:
+            try:
+                data = attempt_scrape()
 
                 connection = connect_to_oracle()
                 if connection:
@@ -150,29 +157,49 @@ def scrape_dni_info(dni):
                     result['message'] = "No se pudo conectar a la base de datos."
                     result['success'] = False
 
-            except Exception as e:
-                data = {
-                    'dni': dni,
-                    'apellido_paterno': None,
-                    'apellido_materno': None,
-                    'nombres': None,
-                    'digito_verificador': None,
-                    'status': 0,
-                    'error': str(e)
-                }
-                connection = connect_to_oracle()
-                if connection:
-                    insert_into_table(connection, data)
-                    connection.close()
-                result['message'] = "No se ha encontrado el DNI"
-                result['success'] = False
+            except NoSuchElementException:
+                try:
+                    browser_instance.close()
+                    browser_instance.switch_to.window(browser_instance.window_handles[0])
+                    time.sleep(3) # Esperar un poco antes de reintentar
+                    data = attempt_scrape()
+
+                    connection = connect_to_oracle()
+                    if connection:
+                        insert_into_table(connection, data)
+                        connection.close()
+                        result['message'] = "Información de DNI obtenida y guardada en la base de datos."
+                        result['success'] = True
+                    else:
+                        result['message'] = "No se pudo conectar a la base de datos."
+                        result['success'] = False
+
+                except NoSuchElementException as e:
+                    data = {
+                        'dni': dni,
+                        'apellido_paterno': None,
+                        'apellido_materno': None,
+                        'nombres': None,
+                        'digito_verificador': None,
+                        'status': 0,
+                        'error': str(e)
+                    }
+                    connection = connect_to_oracle()
+                    if connection:
+                        insert_into_table(connection, data)
+                        connection.close()
+                    result['message'] = "No se ha encontrado el DNI o Cloudflare bloqueó el acceso."
+                    result['success'] = False
+                    browser_instance.close()
+                    browser_instance.switch_to.window(browser_instance.window_handles[0])
 
             browser_instance.close()
             browser_instance.switch_to.window(browser_instance.window_handles[0])
-
         except Exception as e:
             result['message'] = str(e)
             result['success'] = False
+            browser_instance.close()
+            browser_instance.switch_to.window(browser_instance.window_handles[0])
 
     return result
 
