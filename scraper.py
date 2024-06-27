@@ -168,12 +168,6 @@ def scrape_dni_info(dni):
                 except NoSuchElementException as e:
                     attempt_count += 1
                     if attempt_count == 3:
-                        try:
-                            if browser_instance:
-                                browser_instance.close()
-                                browser_instance.switch_to.window(browser_instance.window_handles[0])
-                        except Exception as close_error:
-                            print(f"Error al cerrar el navegador: {close_error}")
                         data = {
                             'dni': dni,
                             'apellido_paterno': None,
