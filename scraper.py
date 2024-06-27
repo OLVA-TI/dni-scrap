@@ -184,18 +184,16 @@ def scrape_dni_info(dni):
                         result['message'] = "No se ha encontrado el DNI o Cloudflare bloqueó el acceso después de varios intentos."
                         result['success'] = False
                     else:
-                        time.sleep(3)
+                        time.sleep(3)  # Esperar antes de reintentar
 
         except Exception as e:
             result['message'] = str(e)
             result['success'] = False
         finally:
             try:
-                if browser_instance and len(browser_instance.window_handles) > 1:
-                    current_window_handle = browser_instance.current_window_handle
+                if browser_instance:
                     browser_instance.close()
                     browser_instance.switch_to.window(browser_instance.window_handles[0])
-                    browser_instance.switch_to.window(current_window_handle)
             except Exception as close_error:
                 print(f"Error al cerrar el navegador: {close_error}")
 
