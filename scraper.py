@@ -111,28 +111,28 @@ def insert_into_table(connection, data):
 def scrape_dni_info(dni):
     global browser_instance, browser_lock
     if browser_instance is None:
-        options = webdriver.ChromeOptions()
-        # options.add_argument('--headless')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-popup-blocking')
-        options.add_argument('--disable-notifications')
-        options.add_argument('--disable-background-timer-throttling')
-        options.add_argument('--disable-backgrounding-occluded-windows')
-        options.add_argument('--start-maximized')  # Iniciar Chrome maximizado
-        options.add_argument('--page-load-strategy=eager')
-        options.add_argument('--remote-debugging-port=9230')
-        options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+        options2 = webdriver.ChromeOptions()
+        options2.add_argument('--headless')
+        options2.add_argument('--no-sandbox')
+        options2.add_argument('--disable-dev-shm-usage')
+        options2.add_argument('--disable-gpu')
+        options2.add_argument('--disable-extensions')
+        options2.add_argument('--disable-popup-blocking')
+        options2.add_argument('--disable-notifications')
+        options2.add_argument('--disable-background-timer-throttling')
+        options2.add_argument('--disable-backgrounding-occluded-windows')
+        # options2.add_argument('--start-maximized')  # Iniciar Chrome maximizado
+        options2.add_argument('--page-load-strategy=eager')
+        options2.add_argument('--remote-debugging-port=9230')
+        options2.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
         prefs = {
             "profile.managed_default_content_settings.images": 2,
             "profile.managed_default_content_settings.stylesheets": 2,
         }
-        options.add_experimental_option("prefs", prefs)
+        options2.add_experimental_option("prefs", prefs)
 
         try:
-            browser_instance = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
+            browser_instance = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options2)
             browser_instance.set_page_load_timeout(90)
             browser_instance.implicitly_wait(6)
         except Exception as e:
