@@ -5,6 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import threading
 import time
 from selenium.common.exceptions import NoSuchElementException
@@ -28,7 +29,7 @@ def init_browser():
     global browser_instance
     if browser_instance is None:
         options = webdriver.ChromeOptions()
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--disable-gpu')
@@ -37,10 +38,9 @@ def init_browser():
         options.add_argument('--disable-notifications')
         options.add_argument('--disable-background-timer-throttling')
         options.add_argument('--disable-backgrounding-occluded-windows')
-        # options.add_argument('--start-maximized')  # Iniciar Chrome maximizado
+        options.add_argument('--start-maximized')  # Iniciar Chrome maximizado
         options.add_argument('--page-load-strategy=eager')
-        options.add_argument('--remote-debugging-port=9230')
-        options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+
         prefs = {
             "profile.managed_default_content_settings.images": 2,
             "profile.managed_default_content_settings.stylesheets": 2,
@@ -49,8 +49,6 @@ def init_browser():
 
         try:
             browser_instance = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-            browser_instance.set_page_load_timeout(90)
-            browser_instance.implicitly_wait(6)
         except Exception as e:
             print(f"Error initializing browser: {e}")
             browser_instance = None
@@ -110,36 +108,9 @@ def insert_into_table(connection, data):
 
 def scrape_dni_info(dni):
     global browser_instance, browser_lock
-    if browser_instance is None:
-        options2 = webdriver.ChromeOptions()
-        options2.add_argument('--headless')
-        options2.add_argument('--no-sandbox')
-        options2.add_argument('--disable-dev-shm-usage')
-        options2.add_argument('--disable-gpu')
-        options2.add_argument('--disable-extensions')
-        options2.add_argument('--disable-popup-blocking')
-        options2.add_argument('--disable-notifications')
-        options2.add_argument('--disable-background-timer-throttling')
-        options2.add_argument('--disable-backgrounding-occluded-windows')
-        # options2.add_argument('--start-maximized')  # Iniciar Chrome maximizado
-        options2.add_argument('--page-load-strategy=eager')
-        options2.add_argument('--remote-debugging-port=9230')
-        options2.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-        prefs = {
-            "profile.managed_default_content_settings.images": 2,
-            "profile.managed_default_content_settings.stylesheets": 2,
-        }
-        options2.add_experimental_option("prefs", prefs)
-
-        try:
-            browser_instance = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options2)
-            browser_instance.set_page_load_timeout(90)
-            browser_instance.implicitly_wait(6)
-        except Exception as e:
-            print(f"Error initializing browser: {e}")
-            browser_instance = None
-
     result = {}
+    print(browser_instance)
+
     with browser_lock:
         if browser_instance is None:
             init_browser()
@@ -149,106 +120,84 @@ def scrape_dni_info(dni):
             result['success'] = False
             return result
 
-        def attempt_scrape(browser):
-            try:
-                browser.execute_script("window.open('');")
-                browser.switch_to.window(browser.window_handles[-1])
-                browser.get('https://eldni.com/pe/buscar-datos-por-dni')
+        def attempt_scrape():
+            browser_instance.execute_script("window.open('');")
+            browser_instance.switch_to.window(browser_instance.window_handles[-1])
+            browser_instance.get('https://eldni.com/pe/buscar-datos-por-dni')
 
-                dni_input = browser.find_element(By.ID, 'dni')
-                dni_input.send_keys(dni)
-                dni_input.submit()
+            dni_input = browser_instance.find_element(By.ID, 'dni')
+            dni_input.send_keys(dni)
+            dni_input.submit()
 
-                nombres = browser.find_element(By.ID, 'nombres').get_attribute('value')
-                apellidop = browser.find_element(By.ID, 'apellidop').get_attribute('value')
-                apellidom = browser.find_element(By.ID, 'apellidom').get_attribute('value')
-                digito_verificador = get_verify_code(dni)
+            nombres = browser_instance.find_element(By.ID, 'nombres').get_attribute('value')
+            apellidop = browser_instance.find_element(By.ID, 'apellidop').get_attribute('value')
+            apellidom = browser_instance.find_element(By.ID, 'apellidom').get_attribute('value')
+            digito_verificador = get_verify_code(dni)
 
-                return {
-                    'dni': dni,
-                    'apellido_paterno': apellidop,
-                    'apellido_materno': apellidom,
-                    'nombres': nombres,
-                    'digito_verificador': digito_verificador,
-                    'status': 1,
-                    'error': None
-                }
-
-            except NoSuchElementException as e:
-                raise e  # Propagar la excepción para manejarla fuera
+            return {
+                'dni': dni,
+                'apellido_paterno': apellidop,
+                'apellido_materno': apellidom,
+                'nombres': nombres,
+                'digito_verificador': digito_verificador,
+                'status': 1,
+                'error': None
+            }
 
         try:
-            attempt_count = 0
-            while attempt_count < 3:
-                try:
-                    if attempt_count == 0:
-                        data = attempt_scrape(browser_instance)
-                    else:
-                        options2 = webdriver.ChromeOptions()
-                        # options2.add_argument('--headless')
-                        options2.add_argument('--no-sandbox')
-                        options2.add_argument('--disable-dev-shm-usage')
-                        options2.add_argument('--disable-gpu')
-                        options2.add_argument('--disable-extensions')
-                        options2.add_argument('--disable-popup-blocking')
-                        options2.add_argument('--disable-notifications')
-                        options2.add_argument('--disable-background-timer-throttling')
-                        options2.add_argument('--disable-backgrounding-occluded-windows')
-                        options2.add_argument('--start-maximized')  # Iniciar Chrome maximizado
-                        options2.add_argument('--page-load-strategy=eager')
-                        options2.add_argument('--remote-debugging-port=9230')
-                        options2.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                        prefs = {
-                            "profile.managed_default_content_settings.images": 2,
-                            "profile.managed_default_content_settings.stylesheets": 2,
-                        }
-                        options2.add_experimental_option("prefs", prefs)
+            try:
+                data = attempt_scrape()
 
-                        try:
-                            new_browser_instance = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-                            new_browser_instance.set_page_load_timeout(90)
-                            new_browser_instance.implicitly_wait(6)
-                            data = attempt_scrape(new_browser_instance)
-                            new_browser_instance.quit()
-                        except Exception as e:
-                            print(f"Error initializing browser2: {e}")
-                            new_browser_instance = None
-                        
+                connection = connect_to_oracle()
+                if connection:
+                    insert_into_table(connection, data)
+                    connection.close()
+                    result['message'] = "Información de DNI obtenida y guardada en la base de datos."
+                    result['success'] = True
+                else:
+                    result['message'] = "No se pudo conectar a la base de datos."
+                    result['success'] = False
+
+            except NoSuchElementException:
+                try:
+                    time.sleep(3) # Esperar un poco antes de reintentar
+                    data = attempt_scrape()
+
                     connection = connect_to_oracle()
                     if connection:
                         insert_into_table(connection, data)
                         connection.close()
                         result['message'] = "Información de DNI obtenida y guardada en la base de datos."
                         result['success'] = True
-                    break  # Salir del bucle si tiene éxito
+                    else:
+                        result['message'] = "No se pudo conectar a la base de datos."
+                        result['success'] = False
 
                 except NoSuchElementException as e:
-                    attempt_count += 1
-                    if attempt_count == 3:
-                        data = {
-                            'dni': dni,
-                            'apellido_paterno': None,
-                            'apellido_materno': None,
-                            'nombres': None,
-                            'digito_verificador': None,
-                            'status': 0,
-                            'error': str(e)
-                        }
-                        connection = connect_to_oracle()
-                        if connection:
-                            insert_into_table(connection, data)
-                            connection.close()
-                        result['message'] = "No se ha encontrado el DNI o Cloudflare bloqueó el acceso después de varios intentos."
-                        result['success'] = False
-                    else:
-                        time.sleep(3)  # Esperar antes de reintentar
-
-            browser_instance.close()
-            browser_instance.switch_to.window(browser_instance.window_handles[0])
+                    data = {
+                        'dni': dni,
+                        'apellido_paterno': None,
+                        'apellido_materno': None,
+                        'nombres': None,
+                        'digito_verificador': None,
+                        'status': 0,
+                        'error': str(e)
+                    }
+                    connection = connect_to_oracle()
+                    if connection:
+                        insert_into_table(connection, data)
+                        connection.close()
+                    result['message'] = "No se ha encontrado el DNI o Cloudflare bloqueó el acceso."
+                    result['success'] = False
+                finally:
+                    browser_instance.close()
+                    browser_instance.switch_to.window(browser_instance.window_handles[0])
+                        
 
         except Exception as e:
             result['message'] = str(e)
             result['success'] = False
+        finally:
             browser_instance.close()
             browser_instance.switch_to.window(browser_instance.window_handles[0])
 

@@ -39,7 +39,8 @@ api.add_resource(DniScraper, '/scrape')
 api.add_resource(Dni, '/dni/<dni>')
 
 if __name__ == '__main__':
+    init_browser()  # Inicializar el navegador al inicio de la aplicación
     try:
         app.run(debug=True)
     finally:
-        close_browser()
+        close_browser()  # Asegurarse de cerrar el navegador al finalizar
