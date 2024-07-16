@@ -18,9 +18,9 @@ pool = cx_Oracle.SessionPool(
     user=DB_USERNAME,
     password=DB_PASSWORD,
     dsn=cx_Oracle.makedsn(DB_HOST, DB_PORT, service_name=DB_DATABASE),
-    min=2,  # Número mínimo de conexiones abiertas
-    max=10,  # Número máximo de conexiones en el pool
-    increment=1,  # Número de conexiones a incrementar si el pool está agotado
+    min=2,
+    max=15,
+    increment=2,
     encoding="UTF-8"
 )
 

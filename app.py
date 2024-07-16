@@ -1,12 +1,15 @@
 from flask import Flask, request, jsonify, make_response
 from flask_restful import Api, Resource
-from flask_cors import CORS  # Importar flask_cors
+from flask_cors import CORS
 from scraper import scrape_dni_info, init_browser, close_browser
 from searchdni import get_dni_info
 
 app = Flask(__name__)
-CORS(app)  # Habilitar CORS para todas las rutas
+CORS(app)
 api = Api(app)
+
+# Inicializar el navegador al inicio de la aplicación
+init_browser()
 
 @app.route('/')
 def index():
@@ -39,8 +42,7 @@ api.add_resource(DniScraper, '/scrape')
 api.add_resource(Dni, '/dni/<dni>')
 
 if __name__ == '__main__':
-    init_browser()  # Inicializar el navegador al inicio de la aplicación
     try:
         app.run(debug=True)
     finally:
-        close_browser()  # Asegurarse de cerrar el navegador al finalizar
+        close_browser()
