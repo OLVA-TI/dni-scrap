@@ -57,9 +57,14 @@ def get_dni_info(dni):
             data = fetch_dni_from_api(dni)
             if data:
                 insert_into_table(connection, data)
-                del data['status']
-                del data['error']
-                response = {'data': data, 'message': 'Información de DNI obtenida de la API externa.', 'success': True}
+                responseData = {
+                    'apellidoMaterno': data['apellido_materno'],
+                    'apellidoPaterno': data['apellido_paterno'],
+                    'digitoVerificador': data['digito_verificador'],
+                    'dni': data['dni'],
+                    'nombres': data['nombres']
+                }
+                response = {'data': responseData, 'message': 'Información de DNI obtenida de la API externa.', 'success': True}
             else:
                 response = {'message': f'No se encontraron datos para el DNI especificado {dni}.', 'success': False}
         

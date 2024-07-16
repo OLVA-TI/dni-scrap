@@ -80,10 +80,10 @@ def fetch_dni_from_api(dni):
             data = result['data']
             return {
                 'dni': data['numero'],
-                'apellidoMaterno': data['apellido_paterno'],
-                'apellidoMaterno': data['apellido_materno'],
+                'apellido_paterno': data['apellido_paterno'],
+                'apellido_materno': data['apellido_materno'],
                 'nombres': data['nombres'],
-                'digitoVerificador': data['codigo_verificacion'],
+                'digito_verificador': data['codigo_verificacion'],
                 'status': 1,
                 'error': None
             }
