@@ -13,10 +13,20 @@ DB_USERNAME = os.getenv("DB_USERNAME")
 DB_USERSCHEMA = os.getenv("DB_USERSCHEMA")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
+# Crear el pool de conexiones
+pool = cx_Oracle.SessionPool(
+    user=DB_USERNAME,
+    password=DB_PASSWORD,
+    dsn=cx_Oracle.makedsn(DB_HOST, DB_PORT, service_name=DB_DATABASE),
+    min=2,  # Número mínimo de conexiones abiertas
+    max=10,  # Número máximo de conexiones en el pool
+    increment=1,  # Número de conexiones a incrementar si el pool está agotado
+    encoding="UTF-8"
+)
+
 def get_database_connection():
     try:
-        dsn = cx_Oracle.makedsn(DB_HOST, DB_PORT, service_name=DB_DATABASE)
-        connection = cx_Oracle.connect(user=DB_USERNAME, password=DB_PASSWORD, dsn=dsn)
+        connection = pool.acquire()
         return connection
     except cx_Oracle.Error as error:
         print('Error al conectar a Oracle:', error)
@@ -65,7 +75,7 @@ def get_dni_info(dni):
             else:
                 response = {'message': f'No se encontraron datos para el DNI especificado {dni}.', 'success': False}
         
-        connection.close()
+        pool.release(connection)
     except cx_Oracle.Error as error:
         response = {'message': 'Error al consultar la base de datos: ' + str(error), 'success': False}
 
