@@ -2,7 +2,7 @@ from flask import jsonify
 import cx_Oracle
 import os
 from dotenv import load_dotenv
-from scraper import scrape_dni_info
+from scraper import fetch_dni_from_api, insert_into_table, connect_to_oracle
 
 load_dotenv()
 
@@ -19,7 +19,7 @@ pool = cx_Oracle.SessionPool(
     password=DB_PASSWORD,
     dsn=cx_Oracle.makedsn(DB_HOST, DB_PORT, service_name=DB_DATABASE),
     min=2,
-    max=15,
+    max=10,
     increment=2,
     encoding="UTF-8"
 )
@@ -54,29 +54,18 @@ def get_dni_info(dni):
             }
             response = {'data': data, 'message': 'Información de DNI obtenida de la base de datos.', 'success': True}
         else:
-            scrape_result = scrape_dni_info(dni)
-            if scrape_result['success']:
-                cursor = connection.cursor()
-                cursor.execute(query, {'dni': dni})
-                result = cursor.fetchone()
-                cursor.close()
-                
-                if result:
-                    data = {
-                        'apellidoMaterno': result[0],
-                        'apellidoPaterno': result[1],
-                        'digitoVerificador': result[2],
-                        'dni': result[3],
-                        'nombres': result[4]
-                    }
-                    response = {'data': data, 'message': 'Información de DNI obtenida después del scraping.', 'success': True}
-                else:
-                    response = {'message': f'No se encontraron datos para el DNI especificado después del scraping {dni}.', 'success': False}
+            data = fetch_dni_from_api(dni)
+            if data:
+                insert_into_table(connection, data)
+                del data['status']
+                del data['error']
+                response = {'data': data, 'message': 'Información de DNI obtenida de la API externa.', 'success': True}
             else:
                 response = {'message': f'No se encontraron datos para el DNI especificado {dni}.', 'success': False}
         
         pool.release(connection)
     except cx_Oracle.Error as error:
         response = {'message': 'Error al consultar la base de datos: ' + str(error), 'success': False}
+
 
     return response
