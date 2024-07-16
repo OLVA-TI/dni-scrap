@@ -67,7 +67,7 @@ Este proyecto proporciona instrucciones para instalar y ejecutar [breve descripc
 8. Ejecuta el proyecto en produccion:
 
    ```
-   screen gunicorn --bind 0.0.0.0:8089 --workers 5 --timeout 30 app:app
+   screen gunicorn --bind 0.0.0.0:8089 --workers 5 --threads 5 --timeout 15 --access-logfile access.log app:app
    ```
 
 9. El proyecto estará disponible en http://0.0.0.0:8089.
