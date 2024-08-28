@@ -56,7 +56,7 @@ def insert_into_table_ruc(connection, data):
             'condicion': data['condicion'],
             'ubigeo': data['ubigeo_sunat'],
         }
-        
+
         merge_sql = """
         MERGE INTO CONTRIBUYENTE c
         USING (
@@ -96,7 +96,6 @@ def fetch_dni_from_api(dni):
 
     response = requests.post(f'{API_URL}/dni?dni={dni}', json={}, headers=headers)
 
-    print(response,f'{API_URL}/dni?dni={dni}')
     if response.status_code == 200:
         result = response.json()
         if result['success']:
