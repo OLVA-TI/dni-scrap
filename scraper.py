@@ -1,32 +1,13 @@
 import os
-import cx_Oracle
 import requests
+import cx_Oracle
 from dotenv import load_dotenv
 
-load_dotenv()
-
-# Variables de entorno para la base de datos
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_DATABASE = os.getenv("DB_DATABASE")
-DB_USERNAME = os.getenv("DB_USERNAME")
-DB_USERSCHEMA = os.getenv("DB_USERSCHEMA")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-
+load_dotenv(override=True)
 API_URL = os.getenv("API_URL")
 API_TOKEN = os.getenv("API_TOKEN")
 
-
-def connect_to_oracle():
-    try:
-        dsn = cx_Oracle.makedsn(DB_HOST, DB_PORT, service_name=DB_DATABASE)
-        connection = cx_Oracle.connect(user=DB_USERNAME, password=DB_PASSWORD, dsn=dsn)
-        return connection
-    except cx_Oracle.Error as error:
-        print('Error al conectar a Oracle:', error)
-        return None
-
-def insert_into_table(connection, data):
+def insert_into_table_dni(connection, data):
     try:
         cursor = connection.cursor()
 
@@ -64,16 +45,58 @@ def insert_into_table(connection, data):
     except cx_Oracle.Error as error:
         print('Error al insertar datos en la tabla:', error)
 
+def insert_into_table_ruc(connection, data):
+    try:
+        cursor = connection.cursor()
+
+        variables = {
+            'ruc': data['ruc'],
+            'nombre_o_razon_social': data['nombre_o_razon_social'],
+            'estado': data['estado'],
+            'condicion': data['condicion'],
+            'ubigeo': data['ubigeo_sunat'],
+        }
+        
+        merge_sql = """
+        MERGE INTO CONTRIBUYENTE c
+        USING (
+            SELECT :ruc AS ruc, 
+                :nombre_o_razon_social AS razonsocial, 
+                :estado AS estadocontribuyente, 
+                :condicion AS condiciondomicilio,
+                :ubigeo AS ubigeo
+            FROM dual
+        ) src
+        ON (c.ruc = src.ruc)
+        WHEN MATCHED THEN
+            UPDATE SET 
+                c.razonsocial = src.razonsocial,
+                c.estadocontribuyente = src.estadocontribuyente,
+                c.condiciondomicilio = src.condiciondomicilio,
+                c.ubigeo = src.ubigeo
+        WHEN NOT MATCHED THEN
+            INSERT (ruc, razonsocial, estadocontribuyente, condiciondomicilio, ubigeo)
+            VALUES (src.ruc, src.razonsocial, src.estadocontribuyente, src.condiciondomicilio, src.ubigeo)
+        """
+
+        cursor.execute(merge_sql, variables)
+
+        connection.commit()
+        cursor.close()
+        print("Datos insertados o actualizados correctamente en la tabla CONTRIBUYENTE.")
+    except cx_Oracle.Error as error:
+        print('Error al insertar datos en la tabla CONTRIBUYENTE:', error)
+
 def fetch_dni_from_api(dni):
     headers = {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {API_TOKEN}'
     }
-    payload = {'dni': dni}
 
-    response = requests.post(API_URL, json=payload, headers=headers)
+    response = requests.post(f'{API_URL}/dni?dni={dni}', json={}, headers=headers)
 
+    print(response,f'{API_URL}/dni?dni={dni}')
     if response.status_code == 200:
         result = response.json()
         if result['success']:
@@ -86,5 +109,34 @@ def fetch_dni_from_api(dni):
                 'digito_verificador': data['codigo_verificacion'],
                 'status': 1,
                 'error': None
+            }
+    return None
+
+def fetch_ruc_from_api(ruc):
+    headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {API_TOKEN}'
+    }
+
+    response = requests.post(f'{API_URL}/ruc?ruc={ruc}', json={}, headers=headers)
+
+    if response.status_code == 200:
+        result = response.json()
+        if result['success']:
+            data = result['data']
+            return {
+                'ruc': data['ruc'],
+                'nombre_o_razon_social': data['nombre_o_razon_social'],
+                'estado': data['estado'],
+                'condicion': data['condicion'],
+                'direccion': data['direccion'],
+                'ubigeo_sunat': data['ubigeo_sunat'],
+                'ubigeo': data['ubigeo_sunat'],
+                'es_agente_de_retencion': data.get('es_agente_de_retencion', 'NO'),
+                'es_buen_contribuyente': data.get('es_buen_contribuyente', 'NO'),
+                'departamento': data.get('departamento'),
+                'provincia': data.get('provincia'),
+                'distrito': data.get('distrito')
             }
     return None

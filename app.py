@@ -3,6 +3,7 @@ from flask_restful import Api, Resource
 from flask_cors import CORS
 from scraper import fetch_dni_from_api
 from searchdni import get_dni_info
+from searchruc import get_ruc_info
 
 app = Flask(__name__)
 CORS(app)
@@ -31,11 +32,21 @@ class Dni(Resource):
             return make_response(jsonify(response), 204)
         return make_response(jsonify(response), 200)
     
+class Ruc(Resource):
+    def get(self, ruc):
+        if not ruc:
+            return error_response('RUC parameter is required', 400)
+        response = get_ruc_info(ruc)
+        if not response['success']:
+            return make_response(jsonify(response), 204)
+        return make_response(jsonify(response), 200)
+    
 def error_response(message, status_code):
     return make_response(jsonify({'error': message}), status_code)
 
 api.add_resource(DniScraper, '/scrape/<dni>')
 api.add_resource(Dni, '/dni/<dni>')
+api.add_resource(Ruc, '/ruc/<ruc>')
 
 if __name__ == '__main__':
     app.run(debug=True)

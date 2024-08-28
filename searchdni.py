@@ -1,36 +1,6 @@
-from flask import jsonify
 import cx_Oracle
-import os
-from dotenv import load_dotenv
-from scraper import fetch_dni_from_api, insert_into_table, connect_to_oracle
-
-load_dotenv()
-
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_DATABASE = os.getenv("DB_DATABASE")
-DB_USERNAME = os.getenv("DB_USERNAME")
-DB_USERSCHEMA = os.getenv("DB_USERSCHEMA")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-
-# Crear el pool de conexiones
-pool = cx_Oracle.SessionPool(
-    user=DB_USERNAME,
-    password=DB_PASSWORD,
-    dsn=cx_Oracle.makedsn(DB_HOST, DB_PORT, service_name=DB_DATABASE),
-    min=2,
-    max=10,
-    increment=2,
-    encoding="UTF-8"
-)
-
-def get_database_connection():
-    try:
-        connection = pool.acquire()
-        return connection
-    except cx_Oracle.Error as error:
-        print('Error al conectar a Oracle:', error)
-        return None
+from scraper import fetch_dni_from_api, insert_into_table_dni
+from database import get_database_connection, pool
 
 def get_dni_info(dni):
     try:
@@ -56,7 +26,7 @@ def get_dni_info(dni):
         else:
             data = fetch_dni_from_api(dni)
             if data:
-                insert_into_table(connection, data)
+                insert_into_table_dni(connection, data)
                 responseData = {
                     'apellidoMaterno': data['apellido_materno'],
                     'apellidoPaterno': data['apellido_paterno'],

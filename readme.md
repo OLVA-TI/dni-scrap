@@ -50,13 +50,6 @@ Este proyecto proporciona instrucciones para instalar y ejecutar [breve descripc
    ```
    pip install -r requirements.txt
    ```
-6. Instalar Google Chrome:
-
-   ```
-   wget https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
-   sudo dnf install ./google-chrome-stable_current_x86_64.rpm
-
-   ```
 
 7. Ejecuta el proyecto en desarrollo:
 
