@@ -12,7 +12,7 @@ api = Api(app)
 @app.route('/')
 def index():
     return jsonify({
-        'message': 'Bienvenido a la API de Scrapeo de DNI. Utiliza /scrape?dni=NUMERO_DNI para obtener información.'
+        'message': 'Bienvenido a la API de consulta de DNI y RUC'
     })
 
 class DniScraper(Resource):
@@ -27,7 +27,8 @@ class Dni(Resource):
     def get(self, dni):
         if not dni:
             return error_response('DNI parameter is required', 400)
-        response = get_dni_info(dni)
+        _source = request.args.get('source', 'OLVA')
+        response = get_dni_info(dni, _source)
         if not response['success']:
             return make_response(jsonify(response), 204)
         return make_response(jsonify(response), 200)
@@ -36,7 +37,8 @@ class Ruc(Resource):
     def get(self, ruc):
         if not ruc:
             return error_response('RUC parameter is required', 400)
-        response = get_ruc_info(ruc)
+        _source = request.args.get('source', 'OLVA')
+        response = get_ruc_info(ruc, _source)
         if not response['success']:
             return make_response(jsonify(response), 204)
         return make_response(jsonify(response), 200)

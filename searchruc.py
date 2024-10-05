@@ -2,7 +2,7 @@ import cx_Oracle
 from scraper import fetch_ruc_from_api, insert_into_table_ruc
 from database import get_database_connection, pool
 
-def get_ruc_info(ruc):
+def get_ruc_info(ruc, _source):
     try:
         connection = get_database_connection()
         if not connection:
@@ -34,7 +34,7 @@ def get_ruc_info(ruc):
             response = {'data': responseData, 'message': 'Información de RUC obtenida de la base de datos.', 'success': True}
         else:
             # Si no existe o el estado/condición no es el esperado, consultar la API
-            data = fetch_ruc_from_api(ruc)
+            data = fetch_ruc_from_api(ruc, _source)
             if data:
                 insert_into_table_ruc(connection, data)
                 ubigeo_sunat = data['ubigeo_sunat']

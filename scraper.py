@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 API_URL = os.getenv("API_URL")
 API_TOKEN = os.getenv("API_TOKEN")
+API_TOKEN_CB = os.getenv("API_TOKEN_CB")
 
 def insert_into_table_dni(connection, data):
     try:
@@ -87,11 +88,11 @@ def insert_into_table_ruc(connection, data):
     except cx_Oracle.Error as error:
         print('Error al insertar datos en la tabla CONTRIBUYENTE:', error)
 
-def fetch_dni_from_api(dni):
+def fetch_dni_from_api(dni, _source):
     headers = {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'Authorization': f'Bearer {API_TOKEN}'
+        'Authorization': f'Bearer {API_TOKEN_CB if _source == "CB" else API_TOKEN}'
     }
 
     response = requests.post(f'{API_URL}/dni?dni={dni}', json={}, headers=headers)
@@ -111,11 +112,11 @@ def fetch_dni_from_api(dni):
             }
     return None
 
-def fetch_ruc_from_api(ruc):
+def fetch_ruc_from_api(ruc, _source):
     headers = {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'Authorization': f'Bearer {API_TOKEN}'
+        'Authorization': f'Bearer {API_TOKEN_CB if _source == "CB" else API_TOKEN}'
     }
 
     response = requests.post(f'{API_URL}/ruc?ruc={ruc}', json={}, headers=headers)

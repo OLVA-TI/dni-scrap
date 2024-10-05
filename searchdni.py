@@ -2,7 +2,7 @@ import cx_Oracle
 from scraper import fetch_dni_from_api, insert_into_table_dni
 from database import get_database_connection, pool
 
-def get_dni_info(dni):
+def get_dni_info(dni, _source):
     try:
         connection = get_database_connection()
         if not connection:
@@ -24,7 +24,7 @@ def get_dni_info(dni):
             }
             response = {'data': data, 'message': 'Información de DNI obtenida de la base de datos.', 'success': True}
         else:
-            data = fetch_dni_from_api(dni)
+            data = fetch_dni_from_api(dni, _source)
             if data:
                 insert_into_table_dni(connection, data)
                 responseData = {
